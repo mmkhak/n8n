@@ -1,0 +1,6 @@
+{
+	"name": "n8n-biz",
+	"build": {
+		"dockerfile": "./docker/images/n8n/Dockerfile"
+	}
+}
