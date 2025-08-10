@@ -10,7 +10,10 @@ import { NoDynamicImportTemplateRule } from './no-dynamic-import-template.js';
 import { MisplacedN8nTypeormImportRule } from './misplaced-n8n-typeorm-import.js';
 import { NoTypeUnsafeEventEmitterRule } from './no-type-unsafe-event-emitter.js';
 import { NoUntypedConfigClassFieldRule } from './no-untyped-config-class-field.js';
+import { NoTopLevelRelativeImportsInBackendModuleRule } from './no-top-level-relative-imports-in-backend-module.js';
+import { NoConstructorInBackendModuleRule } from './no-constructor-in-backend-module.js';
 import type { AnyRuleModule } from '@typescript-eslint/utils/ts-eslint';
+import { NoArgumentSpreadRule } from './no-argument-spread.js';
 
 export const rules = {
 	'no-uncaught-json-parse': NoUncaughtJsonParseRule,
@@ -25,4 +28,7 @@ export const rules = {
 	'misplaced-n8n-typeorm-import': MisplacedN8nTypeormImportRule,
 	'no-type-unsafe-event-emitter': NoTypeUnsafeEventEmitterRule,
 	'no-untyped-config-class-field': NoUntypedConfigClassFieldRule,
+	'no-top-level-relative-imports-in-backend-module': NoTopLevelRelativeImportsInBackendModuleRule,
+	'no-constructor-in-backend-module': NoConstructorInBackendModuleRule,
+	'no-argument-spread': NoArgumentSpreadRule,
 } satisfies Record<string, AnyRuleModule>;

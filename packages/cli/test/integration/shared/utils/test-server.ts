@@ -1,10 +1,6 @@
-import { LicenseState } from '@n8n/backend-common';
-import { ModuleRegistry } from '@n8n/backend-common';
-import { mockInstance, mockLogger } from '@n8n/backend-test-utils';
-import { testModules } from '@n8n/backend-test-utils';
-import { testDb } from '@n8n/backend-test-utils';
-import type { APIRequest } from '@n8n/db';
-import type { User } from '@n8n/db';
+import { LicenseState, ModuleRegistry } from '@n8n/backend-common';
+import { mockInstance, mockLogger, testModules, testDb } from '@n8n/backend-test-utils';
+import type { APIRequest, User } from '@n8n/db';
 import { Container } from '@n8n/di';
 import cookieParser from 'cookie-parser';
 import express from 'express';
@@ -58,7 +54,11 @@ function createAgent(
 	if (withRestSegment) void agent.use(prefix(REST_PATH_SEGMENT));
 
 	if (options?.auth && options?.user) {
-		const token = Container.get(AuthService).issueJWT(options.user, browserId);
+		const token = Container.get(AuthService).issueJWT(
+			options.user,
+			options.user.mfaEnabled,
+			browserId,
+		);
 		agent.jar.setCookie(`${AUTH_COOKIE_NAME}=${token}`);
 	}
 	return agent;
@@ -228,7 +228,7 @@ export const setupTestServer = ({
 						break;
 
 					case 'community-packages':
-						await import('@/controllers/community-packages.controller');
+						await import('@/community-packages/community-packages.controller');
 						break;
 
 					case 'me':

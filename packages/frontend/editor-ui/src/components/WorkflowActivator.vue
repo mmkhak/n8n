@@ -262,7 +262,7 @@ watch(
 						@click="displayActivationError"
 					></div>
 				</template>
-				<font-awesome-icon icon="exclamation-triangle" @click="displayActivationError" />
+				<n8n-icon icon="triangle-alert" @click="displayActivationError" />
 			</n8n-tooltip>
 		</div>
 	</div>
@@ -270,7 +270,6 @@ watch(
 
 <style lang="scss" module>
 .activeStatusText {
-	width: 64px; // Required to avoid jumping when changing active state
 	padding-right: var(--spacing-2xs);
 	box-sizing: border-box;
 	display: inline-block;

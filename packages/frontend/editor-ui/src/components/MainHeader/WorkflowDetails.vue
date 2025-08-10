@@ -21,6 +21,7 @@ import WorkflowTagsDropdown from '@/components/WorkflowTagsDropdown.vue';
 import BreakpointsObserver from '@/components/BreakpointsObserver.vue';
 import WorkflowHistoryButton from '@/components/MainHeader/WorkflowHistoryButton.vue';
 import CollaborationPane from '@/components/MainHeader/CollaborationPane.vue';
+import WorkflowProductionChecklist from '@/components/WorkflowProductionChecklist.vue';
 import { ResourceType } from '@/utils/projects.utils';
 
 import { useProjectsStore } from '@/stores/projects.store';
@@ -61,6 +62,10 @@ import { type BaseTextKey, useI18n } from '@n8n/i18n';
 import { ProjectTypes } from '@/types/projects.types';
 import { useWorkflowSaving } from '@/composables/useWorkflowSaving';
 import { sanitizeFilename } from '@/utils/fileUtils';
+import { I18nT } from 'vue-i18n';
+
+const WORKFLOW_NAME_MAX_WIDTH_SMALL_SCREENS = 150;
+const WORKFLOW_NAME_MAX_WIDTH_WIDE_SCREENS = 200;
 
 const props = defineProps<{
 	readOnly?: boolean;
@@ -692,7 +697,7 @@ const onBreadcrumbsItemSelected = (item: PathItem) => {
 			class="name-container"
 			data-test-id="canvas-breadcrumbs"
 		>
-			<template #default>
+			<template #default="{ bp }">
 				<FolderBreadcrumbs
 					:current-folder="currentFolderForBreadcrumbs"
 					:current-folder-as-link="true"
@@ -712,6 +717,11 @@ const onBreadcrumbsItemSelected = (item: PathItem) => {
 							class="name"
 							:model-value="name"
 							:max-length="MAX_WORKFLOW_NAME_LENGTH"
+							:max-width="
+								['XS', 'SM'].includes(bp)
+									? WORKFLOW_NAME_MAX_WIDTH_SMALL_SCREENS
+									: WORKFLOW_NAME_MAX_WIDTH_WIDE_SCREENS
+							"
 							:read-only="readOnly || isArchived || (!isNewWorkflow && !workflowPermissions.update)"
 							:disabled="readOnly || isArchived || (!isNewWorkflow && !workflowPermissions.update)"
 							@update:model-value="onNameSubmit"
@@ -773,6 +783,7 @@ const onBreadcrumbsItemSelected = (item: PathItem) => {
 		</span>
 
 		<PushConnectionTracker class="actions">
+			<WorkflowProductionChecklist v-if="!isNewWorkflow" :workflow="workflowsStore.workflow" />
 			<span :class="`activator ${$style.group}`">
 				<WorkflowActivator
 					:is-archived="isArchived"
@@ -798,12 +809,13 @@ const onBreadcrumbsItemSelected = (item: PathItem) => {
 							{{ i18n.baseText('workflowDetails.share') }}
 						</N8nButton>
 						<template #content>
-							<i18n-t
+							<I18nT
 								:keypath="
 									uiStore.contextBasedTranslationKeys.workflows.sharing.unavailable.description
 										.tooltip
 								"
 								tag="span"
+								scope="global"
 							>
 								<template #action>
 									<a @click="goToUpgrade">
@@ -815,7 +827,7 @@ const onBreadcrumbsItemSelected = (item: PathItem) => {
 										}}
 									</a>
 								</template>
-							</i18n-t>
+							</I18nT>
 						</template>
 					</N8nTooltip>
 				</template>
@@ -937,6 +949,26 @@ $--header-spacing: 20px;
 		:deep(input) {
 			min-width: 180px;
 		}
+	}
+}
+
+@media (max-width: 1390px) {
+	.name-container {
+		margin-right: var(--spacing-xs);
+	}
+
+	.actions {
+		gap: var(--spacing-xs);
+	}
+}
+
+@media (max-width: 1350px) {
+	.name-container {
+		margin-right: var(--spacing-2xs);
+	}
+
+	.actions {
+		gap: var(--spacing-2xs);
 	}
 }
 </style>
