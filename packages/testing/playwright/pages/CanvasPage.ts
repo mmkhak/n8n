@@ -2,9 +2,15 @@ import type { Locator } from '@playwright/test';
 import { nanoid } from 'nanoid';
 
 import { BasePage } from './BasePage';
+import { ROUTES } from '../config/constants';
 import { resolveFromRoot } from '../utils/path-helper';
+import { LogsPanel } from './components/LogsPanel';
+import { StickyComponent } from './components/StickyComponent';
 
 export class CanvasPage extends BasePage {
+	readonly sticky = new StickyComponent(this.page);
+	readonly logsPanel = new LogsPanel(this.page.getByTestId('logs-panel'));
+
 	saveWorkflowButton(): Locator {
 		return this.page.getByRole('button', { name: 'Save' });
 	}
@@ -15,6 +21,19 @@ export class CanvasPage extends BasePage {
 
 	nodeCreatorSubItem(subItemText: string): Locator {
 		return this.page.getByTestId('node-creator-item-name').getByText(subItemText, { exact: true });
+	}
+
+	getNthCreatorItem(index: number): Locator {
+		return this.page.getByTestId('node-creator-item').nth(index);
+	}
+
+	getNodeCreatorHeader(text?: string) {
+		const header = this.page.getByTestId('nodes-list-header');
+		return text ? header.filter({ hasText: text }) : header.first();
+	}
+
+	async selectNodeCreatorItemByText(nodeName: string) {
+		await this.page.getByText(nodeName).click();
 	}
 
 	nodeByName(nodeName: string): Locator {
@@ -57,36 +76,63 @@ export class CanvasPage extends BasePage {
 		await this.nodeCreatorItemByName(text).click();
 	}
 
-	async addNode(text: string): Promise<void> {
+	/**
+	 * Add a node to the canvas with flexible options
+	 * @param nodeName - The name of the node to search for and add
+	 * @param options - Configuration options for node addition
+	 * @param options.closeNDV - Whether to close the NDV after adding (default: false, keeps open)
+	 * @param options.action - Specific action to select (Actions tab is default)
+	 * @param options.trigger - Specific trigger to select (will switch to Triggers)
+	 * @example
+	 * // Basic node addition
+	 * await canvas.addNode('Code');
+	 *
+	 * // Add with specific action
+	 * await canvas.addNode('Linear', { action: 'Create an issue' });
+	 *
+	 * // Add with trigger
+	 * await canvas.addNode('Jira', { trigger: 'On issue created' });
+	 *
+	 * // Add and explicitly close with back button
+	 * await canvas.addNode('Code', { closeNDV: true });
+	 */
+	async addNode(
+		nodeName: string,
+		options?: {
+			closeNDV?: boolean;
+			action?: string;
+			trigger?: string;
+		},
+	): Promise<void> {
+		// Always start with canvas plus button
 		await this.clickNodeCreatorPlusButton();
-		await this.fillNodeCreatorSearchBar(text);
-		await this.clickNodeCreatorItemName(text);
-	}
 
-	async addNodeAndCloseNDV(text: string, subItemText?: string): Promise<void> {
-		if (subItemText) {
-			await this.addNodeWithSubItem(text, subItemText);
-		} else {
-			await this.addNode(text);
+		// Search for and select the node, works on exact name match only
+		await this.fillNodeCreatorSearchBar(nodeName);
+		await this.clickNodeCreatorItemName(nodeName);
+
+		if (options?.action) {
+			// Check if Actions category is collapsed and expand if needed
+			const actionsCategory = this.page
+				.getByTestId('node-creator-category-item')
+				.getByText('Actions');
+			if ((await actionsCategory.getAttribute('data-category-collapsed')) === 'true') {
+				await actionsCategory.click();
+			}
+			await this.nodeCreatorSubItem(options.action).click();
+		} else if (options?.trigger) {
+			// Check if Triggers category is collapsed and expand if needed
+			const triggersCategory = this.page
+				.getByTestId('node-creator-category-item')
+				.getByText('Triggers');
+			if ((await triggersCategory.getAttribute('data-category-collapsed')) === 'true') {
+				await triggersCategory.click();
+			}
+			await this.nodeCreatorSubItem(options.trigger).click();
 		}
-		await this.page.keyboard.press('Escape');
-	}
-
-	async addNodeWithSubItem(searchText: string, subItemText: string): Promise<void> {
-		await this.addNode(searchText);
-		await this.nodeCreatorSubItem(subItemText).click();
-	}
-
-	async addActionNode(searchText: string, subItemText: string): Promise<void> {
-		await this.addNode(searchText);
-		await this.page.getByText('Actions').click();
-		await this.nodeCreatorSubItem(subItemText).click();
-	}
-
-	async addTriggerNode(searchText: string, subItemText: string): Promise<void> {
-		await this.addNode(searchText);
-		await this.page.getByText('Triggers').click();
-		await this.nodeCreatorSubItem(subItemText).click();
+		if (options?.closeNDV) {
+			await this.page.getByTestId('back-to-canvas').click();
+		}
 	}
 
 	async deleteNodeByName(nodeName: string): Promise<void> {
@@ -178,15 +224,17 @@ export class CanvasPage extends BasePage {
 		return this.page.getByTestId('workflow-tags').locator('.el-tag');
 	}
 	async activateWorkflow() {
+		const switchElement = this.page.getByTestId('workflow-activate-switch');
+		const statusElement = this.page.getByTestId('workflow-activator-status');
+
 		const responsePromise = this.page.waitForResponse(
 			(response) =>
 				response.url().includes('/rest/workflows/') && response.request().method() === 'PATCH',
 		);
 
-		await this.page.getByTestId('workflow-activate-switch').click();
+		await switchElement.click();
+		await statusElement.locator('span').filter({ hasText: 'Active' }).waitFor({ state: 'visible' });
 		await responsePromise;
-
-		await this.page.waitForTimeout(200);
 	}
 
 	async clickZoomToFitButton(): Promise<void> {
@@ -301,7 +349,7 @@ export class CanvasPage extends BasePage {
 	}
 
 	nodeCreatorNodeItems(): Locator {
-		return this.page.getByTestId('node-creator-node-item');
+		return this.page.getByTestId('node-creator-item-name');
 	}
 
 	nodeCreatorActionItems(): Locator {
@@ -329,6 +377,14 @@ export class CanvasPage extends BasePage {
 
 	canvasPane(): Locator {
 		return this.page.getByTestId('canvas-wrapper');
+	}
+
+	canvasBody(): Locator {
+		return this.page.getByTestId('canvas');
+	}
+
+	toggleFocusPanelButton(): Locator {
+		return this.page.getByTestId('toggle-focus-panel-button');
 	}
 
 	// Actions
@@ -444,6 +500,63 @@ export class CanvasPage extends BasePage {
 		// Set fixed time using Playwright's clock API
 		await this.page.clock.setFixedTime(timestamp);
 
-		await this.page.goto('/workflow/new');
+		await this.openNewWorkflow();
+	}
+
+	async addNodeWithSubItem(searchText: string, subItemText: string): Promise<void> {
+		await this.addNode(searchText);
+		await this.nodeCreatorSubItem(subItemText).click();
+	}
+
+	async openNewWorkflow() {
+		await this.page.goto(ROUTES.NEW_WORKFLOW_PAGE);
+	}
+
+	getRagCalloutTip(): Locator {
+		return this.page.getByText('Tip: Get a feel for vector stores in n8n with our');
+	}
+
+	getRagTemplateLink(): Locator {
+		return this.page.getByText('RAG starter template');
+	}
+
+	async clickRagTemplateLink(): Promise<void> {
+		await this.getRagTemplateLink().click();
+	}
+
+	async rightClickNode(nodeName: string): Promise<void> {
+		await this.nodeByName(nodeName).click({ button: 'right' });
+	}
+
+	async clickContextMenuAction(actionText: string): Promise<void> {
+		await this.page.getByTestId('context-menu').getByText(actionText).click();
+	}
+
+	async executeNodeFromContextMenu(nodeName: string): Promise<void> {
+		await this.rightClickNode(nodeName);
+		await this.clickContextMenuAction('execute');
+	}
+
+	getNodesWithSpinner(): Locator {
+		return this.page.getByTestId('canvas-node').filter({
+			has: this.page.locator('[data-icon=refresh-cw]'),
+		});
+	}
+
+	getWaitingNodes(): Locator {
+		return this.page.getByTestId('canvas-node').filter({
+			has: this.page.locator('[data-icon=clock]'),
+		});
+	}
+
+	/**
+	 * Get all currently selected nodes on the canvas
+	 */
+	getSelectedNodes() {
+		return this.page.locator('[data-test-id="canvas-node"].selected');
+	}
+
+	async openExecutions() {
+		await this.page.getByTestId('radio-button-executions').click();
 	}
 }

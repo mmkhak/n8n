@@ -121,8 +121,8 @@ export class FrontendService {
 			saveDataSuccessExecution: this.globalConfig.executions.saveDataOnSuccess,
 			saveManualExecutions: this.globalConfig.executions.saveDataManualExecutions,
 			saveExecutionProgress: this.globalConfig.executions.saveExecutionProgress,
-			executionTimeout: config.getEnv('executions.timeout'),
-			maxExecutionTimeout: config.getEnv('executions.maxTimeout'),
+			executionTimeout: this.globalConfig.executions.timeout,
+			maxExecutionTimeout: this.globalConfig.executions.maxTimeout,
 			workflowCallerPolicyDefaultOption: this.globalConfig.workflows.callerPolicyDefaultOption,
 			timezone: this.globalConfig.generic.timezone,
 			urlBaseWebhook: this.urlService.getWebhookBaseUrl(),
@@ -131,6 +131,8 @@ export class FrontendService {
 			nodeJsVersion: process.version.replace(/^v/, ''),
 			versionCli: N8N_VERSION,
 			concurrency: this.globalConfig.executions.concurrency.productionLimit,
+			isNativePythonRunnerEnabled:
+				this.globalConfig.taskRunners.enabled && process.env.N8N_NATIVE_PYTHON_RUNNER === 'true',
 			authCookie: {
 				secure: this.globalConfig.auth.cookie.secure,
 			},

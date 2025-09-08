@@ -234,8 +234,8 @@ describe('GlobalConfig', () => {
 				gracefulShutdownTimeout: 30,
 				prefix: 'bull',
 				settings: {
-					lockDuration: 30_000,
-					lockRenewTime: 15_000,
+					lockDuration: 60_000,
+					lockRenewTime: 10_000,
 					stalledInterval: 30_000,
 					maxStalledCount: 1,
 				},
@@ -302,6 +302,8 @@ describe('GlobalConfig', () => {
 			disableWebhookHtmlSandboxing: false,
 		},
 		executions: {
+			timeout: -1,
+			maxTimeout: 3600,
 			pruneData: true,
 			pruneDataMaxAge: 336,
 			pruneDataMaxCount: 10_000,

@@ -5,7 +5,7 @@ export type DataStoreColumn = {
 	name: string;
 	type: DataStoreColumnType;
 	index: number;
-	dataStoreId: string;
+	dataTableId: string;
 };
 
 export type DataStore = {
@@ -15,7 +15,6 @@ export type DataStore = {
 	createdAt: Date;
 	updatedAt: Date;
 	projectId: string;
-	sizeBytes: number;
 };
 
 export type CreateDataStoreColumnOptions = Pick<DataStoreColumn, 'name' | 'type'> &
@@ -42,20 +41,25 @@ export type ListDataStoreOptions = {
 	skip?: number;
 };
 
-export type ListDataStoreContentFilter = {
+export type DataTableFilter = {
 	type: 'and' | 'or';
 	filters: Array<{
 		columnName: string;
-		condition: 'eq' | 'neq';
-		value: string | number | boolean | Date;
+		condition: 'eq' | 'neq' | 'like' | 'ilike' | 'gt' | 'gte' | 'lt' | 'lte';
+		value: DataStoreColumnJsType;
 	}>;
 };
 
 export type ListDataStoreRowsOptions = {
-	filter?: ListDataStoreContentFilter;
+	filter?: DataTableFilter;
 	sortBy?: [string, 'ASC' | 'DESC'];
 	take?: number;
 	skip?: number;
+};
+
+export type UpdateDataStoreRowsOptions = {
+	filter: DataTableFilter;
+	data: DataStoreRow;
 };
 
 export type UpsertDataStoreRowsOptions = {
@@ -70,13 +74,24 @@ export type MoveDataStoreColumnOptions = {
 export type AddDataStoreColumnOptions = Pick<DataStoreColumn, 'name' | 'type'> &
 	Partial<Pick<DataStoreColumn, 'index'>>;
 
-export type DataStoreColumnJsType = string | number | boolean | Date;
+export type DataStoreColumnJsType = string | number | boolean | Date | null;
 
-export type DataStoreRow = Record<string, DataStoreColumnJsType | null>;
+export const DATA_TABLE_SYSTEM_COLUMNS = ['id', 'createdAt', 'updatedAt'] as const;
+
+export type DataStoreRowReturnBase = {
+	id: number;
+	createdAt: Date;
+	updatedAt: Date;
+};
+export type DataStoreRow = Record<string, DataStoreColumnJsType>;
 export type DataStoreRows = DataStoreRow[];
+export type DataStoreRowReturn = DataStoreRow & DataStoreRowReturnBase;
+export type DataStoreRowsReturn = DataStoreRowReturn[];
 
 // APIs for a data store service operating on a specific projectId
 export interface IDataStoreProjectAggregateService {
+	getProjectId(): string;
+
 	createDataStore(options: CreateDataStoreOptions): Promise<DataStore>;
 
 	getManyAndCount(options: ListDataStoreOptions): Promise<{ count: number; data: DataStore[] }>;
@@ -99,9 +114,13 @@ export interface IDataStoreProjectService {
 
 	getManyRowsAndCount(
 		dto: Partial<ListDataStoreRowsOptions>,
-	): Promise<{ count: number; data: DataStoreRows }>;
+	): Promise<{ count: number; data: DataStoreRowsReturn }>;
 
-	insertRows(rows: DataStoreRows): Promise<number[]>;
+	insertRows(rows: DataStoreRows): Promise<DataStoreRowReturn[]>;
 
-	upsertRows(options: UpsertDataStoreRowsOptions): Promise<boolean>;
+	updateRows(options: UpdateDataStoreRowsOptions): Promise<DataStoreRowReturn[]>;
+
+	upsertRows(options: UpsertDataStoreRowsOptions): Promise<DataStoreRowReturn[]>;
+
+	deleteRows(ids: number[]): Promise<boolean>;
 }
