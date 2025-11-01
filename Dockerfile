@@ -21,9 +21,13 @@ RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
 
 WORKDIR /build
 
-# Copy package files
+# Copy configuration files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY tsconfig.json turbo.json ./
+COPY scripts ./scripts
 COPY patches ./patches
+
+# Copy all packages
 COPY packages ./packages
 
 # Install dependencies

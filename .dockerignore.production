@@ -1,0 +1,61 @@
+# .dockerignore for production builds
+# Only ignore truly unnecessary files
+
+# Git
+.git
+.gitignore
+.gitattributes
+.git-blame-ignore-revs
+
+# CI/CD
+.github
+!.github/scripts
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Docs (except THIRD_PARTY_LICENSES)
+**/*.md
+!**/THIRD_PARTY_LICENSES.md
+!**/README.md
+
+# Build artifacts
+node_modules
+packages/**/node_modules
+packages/**/dist
+packages/**/.turbo
+*.tsbuildinfo
+.cache
+
+# Tests
+packages/testing
+packages/**/*.test.*
+packages/**/*.spec.*
+**/__tests__
+**/__mocks__
+
+# Environment
+**/.env
+**/.env.*
+!**/.env.example
+
+# Temporary
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Docker
+docker/compose
+Dockerfile.test
+docker-compose.yml
+docker-compose.*.yml
+!docker-compose.production.yml
+
+# Other
+assets
+coverage
+.turbo
